@@ -1,112 +1,89 @@
-from storage import load_data, save_data, initialize
-import getpass
+from storage import initialize, load_data, save_data
+from auth import authenticate
+from encryption import encrypt_password, decrypt_password
 initialize()
-print("==============")
-print("PASSWORD MANAGER")
-print("==============")
 
-def authenticate():
-    data=load_data()
-    master=data["master_password"]
-    if master == "":
-        print("WELOCME!No master password is found")
-        new_pass=input("Create your master password: ")
-        data["master_password"]=new_pass
-        save_data(data)
+key=authenticate()
 
-        print("Master password created successfully")
-        return True
-    else:
-        enter_pass=getpass.getpass("Please enter your master password: ")
-        if data["master_password"]==enter_pass:
-            print("Successfully logged ")
-            return True
-        else:
-            print("ACCESS DENIED")
-            return False
-
-def ShowMenu():
-    print("1:ADD CREDENTIALS")
-    print("2:VIEW ALL CREDENTIALS")
-    print("3:SEARCH CREDENTIALS")
-    print("4:DELETE CREDENTIAL")
-    print("5:EXIT")
+def show_menu():
+    print("1: ADD CREDENTIALS")
+    print("2: VIEW CREDENTIALS")
+    print("3: SERCH CREDENTIALS")
+    print("4: DELETE CREDENTIALS")
+    print("5: EXIT")
 
 
-def Add():
-    print("====ADD CREDENTIALS====")
+def add(key):
+    print("===ADD CRDENTIALS===")
+    web = input("Enter the website name: ")
     data = load_data()
-    website = input("Enter website name: ")
-    usr = input("USERNAME: ")
-    pwd = input("PASSWORD: ")
-    data["data"][website] = {
+    usr = input("Enter the usernme: ")
+    pwd = input("Enter the password: ")
+    data["data"][web] = {
         "username": usr,
-        "password": pwd
+        "password": encrypt_password(pwd,key)
     }
     save_data(data)
 
-
-def View():
-    print("====VIEW ALL CREDENTIALS====")
-    data = load_data()
-    vault = data["data"]
-    if (vault == 0):
-        print("your vault is empty")
+def view(key):
+    print("===VIEW CREDENTIALS")
+    data=load_data()
+    vault=data["data"]
+    if not vault:
+        print("VAULT IS EMPTY!")
     else:
         print("Saved websites are: ")
-        for site in vault.keys():
+        for site in vault:
             print(f"{site}")
 
-
-def Search():
-    print("====SEARCH CREDENTIALS====")
-    data=load_data()
-    query=input("Please enter the site name: ")
-    if query in data["data"]:
-        info=data["data"][query]
-        print(f"Found credential for {query}: ")
-        print(f"USERNAME: {info['username' ]}")
-        print(f"Password: {info['password']}")
-    else:
-        print("No such site exist in database")
-
-def Delete():
-    print("====DELETE CREDENTIAL====")
+def search(key):
+    print("===SEARCH CREDENTIALS===")
     data = load_data()
-    site_to_delete=input("Please enter the website name you want to delete: ")
+    query = input("Enter the website name: ")
+    if query in data["data"]:
+        print("Data Found!")
+        info = data["data"][query]
+        print(f"USERNAME: {info['username']}")
+        print(f"PASSWORD: {decrypt_password(info['password'],key)}")
+    else:
+        print("NO such website exist in database")
+
+def delete(key):
+    print("===DELETE CREDENTILS===")
+    data = load_data()
+    site_to_delete = input("Enter the website name: ")
     if site_to_delete in data["data"]:
         del data["data"][site_to_delete]
         save_data(data)
-        print(f"{site_to_delete} is successfully deleted")
+        print("Data deleted sucessfully")
     else:
-        print(f"{site_to_delete} not found in vault")
+        print("No such website exist")
 
-def Exit():
-    print("====EXIT====")
+def exit_program(key):
     quit()
 
-if not authenticate():
+if not key:
     exit()
-    
+
+print("===PASSWORD MANAGER===")
+
 while True:
-    ShowMenu()
+    show_menu()
     try:
-        input_user = int(input("Enter the choice:"))
+        input_user = int(input("Enter the choice: "))
         mapping = {
-            1: Add,
-            2: View,
-            3: Search,
-            4: Delete,
-            5: Exit
+            1: add,
+            2: view,
+            3: search,
+            4: delete,
+            5: exit_program
         }
-
         func = mapping[input_user]
-
         if func:
-            func()
+            func(key)
         else:
-            print("Invalid Choice")
+            print("Invalid choice")
     except ValueError:
-        print("Please enter a valid choice")
+        print("Enter correct format")
     except KeyError:
-        print("Please enter a valid choice")
+        print("Enter correct format")
